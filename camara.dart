@@ -25,16 +25,15 @@ class _YourWidgetState extends State<YourWidget> {
       // Check if running on the web
       if (kIsWeb) {
         // For web: use http.Request with FormData
-        var request = http.Request(
-            'POST', Uri.parse('http://localhost/api/wereads/upload.php'));
-        var formData = {
-          'image': await http.MultipartFile.fromPath('image', imageFile.path),
-        };
+        var multipartFile =
+            await http.MultipartFile.fromPath('image', imageFile.path);
 
-        // For web, the request body is a multipart form.
-        request.body = formData as String;
+        var requestMultipart = http.MultipartRequest(
+          'POST',
+          Uri.parse('http://localhost/api/wereads/upload.php'),
+        )..files.add(multipartFile);
 
-        var response = await request.send();
+        var response = await requestMultipart.send();
         var responseData = await response.stream.bytesToString();
         Map<String, dynamic> jsonResponse = json.decode(responseData);
 
@@ -55,7 +54,7 @@ class _YourWidgetState extends State<YourWidget> {
         var file = await http.MultipartFile.fromPath(
           'image',
           imageFile.path,
-          filename: imageFile.name.split('/').last, // Fix the filename handling
+          filename: imageFile.name.split('/').last,
         );
         request.files.add(file);
 
@@ -135,6 +134,8 @@ class _YourWidgetState extends State<YourWidget> {
                           });
                           await _uploadImage(file);
                         },
+                        selectedIndex:
+                            _selectedIndex, // Pass selectedIndex here
                       ),
                     ),
                   );
@@ -203,6 +204,25 @@ class _YourWidgetState extends State<YourWidget> {
                   _showOptionDialog();
                 },
               ),
+              const SizedBox(height: 24),
+              // Upload Button
+              ElevatedButton(
+                onPressed: _selectedImage != null
+                    ? () async {
+                        await _uploadImage(_selectedImage!);
+                      }
+                    : null,
+                child: Text(
+                  'Upload Image',
+                  style: TextStyle(fontSize: 18),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.pink,
+                  disabledForegroundColor: Colors.grey.withOpacity(0.38),
+                  disabledBackgroundColor:
+                      Colors.grey.withOpacity(0.12), // Disable color
+                ),
+              ),
             ],
           ),
           if (_isUploading)
@@ -223,8 +243,13 @@ class _YourWidgetState extends State<YourWidget> {
 // The CameraSetup class remains the same
 class CameraSetup extends StatefulWidget {
   final Function(XFile) onImageCaptured;
+  final int selectedIndex; // Accept selectedIndex here
 
-  const CameraSetup({super.key, required this.onImageCaptured});
+  const CameraSetup({
+    super.key,
+    required this.onImageCaptured,
+    required this.selectedIndex, // Add this to the constructor
+  });
 
   @override
   State<CameraSetup> createState() => _CameraSetupState();
